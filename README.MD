@@ -1,46 +1,86 @@
-001 Введение
-============
+003 Настройка проекта
+---------------------
 
-Какие проблемы при использовании JDBC?
---------------------------------------
+Настраиваем pom.xml. Устанавливаем hibernate, драйвер postgresql, project lombok. Указываем, что будем работать с java 16. Подключаемся к БД из IDE
 
-1.  **Несоответствие двух моделей**
+    <?xml version="1.0" encoding="UTF-8"?>
+            <project xmlns="http://maven.apache.org/POM/4.0.0"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        <modelVersion>4.0.0</modelVersion>
+    
+        <groupId>com.kainv</groupId>
+        <artifactId>Hibernate</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    
+        <properties>
+            <maven.compiler.source>16</maven.compiler.source>
+            <maven.compiler.target>16</maven.compiler.target>
+            <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        </properties>
+    
+        <dependencies>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>5.7.2</version>
+                <scope>test</scope>
+            </dependency>
+    
+            <!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-core -->
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-core</artifactId>
+                <version>5.5.6.Final</version>
+            </dependency>
+    
+            <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>42.2.27</version>
+                <scope>runtime</scope>
+            </dependency>
+    
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.20</version>
+                <scope>provided</scope>
+            </dependency>
+    
+        </dependencies>
+    
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                </plugin>
+    
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.2</version>
+                </plugin>
+            </plugins>
+        </build>
+    </project>
 
-    ![](src/main/resources/h-001-1.png)
 
-    Всё дело в том, что у нас есть несоответствие двух моделей. Т.е. ООП модель в java, где объекты в памяти и объекты взаимодействуют друг с другом. С другой стороны - у нас есть реляционная модель СУБД, где все хранится на жестком диске в виде таблиц и взаимодействие этих таблиц происходит при помощи foreign key'ев и это большая проблема, потому что модели совершенно разные и взаимодействие конкретных элементов тоже разное.
+После присоединения к БД создадим тестовую таблицу:
 
-    В итоге, нам приходилось создавать свою таблицу на которую мы map'пили соответствующий java-класс и именно процесс маппинга (преобразования) табличных данных в java классы и соответствующие их объекты очень трудоемкий процесс, особенно преобразования различных типов, связий между таблицами и т.д.
-
-2.  **Ручное описание простейших SQL запросов**
-
-    ![](src/main/resources/h-001-2.png)
-
-    У нас очень частые операции CRUD и поэтому нам необходимо было каждый раз писать для соответсвующих таблиц свой класс и на маппинг из таблиц в классы и наоборот из классов в таблицы - мы писали свой слой DAO и повторяли одни и те же основные запросы. Мы каждый раз дублировали практически один и тот же код, те же самые запросы и преобразование типы данных java в SQL и наоборот. Это рутинная работа и забирает довольно много времени у программиста.
-
-3.  **Отложенная загрузка данных (Lazy loading)**
-
-    ![](src/main/resources/h-001-3.png)
-
-    Дело в том, что если мы например создадим класс Ticket на соответствующую таблицу ticket и так же заходим создать класс Flight на соответствующую таблицу flight. То если мы вдруг захотим в объекте типа Flight создать список на все тикеты (которые к нему относятся), а в тикете будет ссылка на flight, к которому он относится - то, следовательно, у нас будет бесконечная рекурсия, когда захотим достать flight. flight достанет все ticket'ы, а ticket опять достанет flight, к которому он относится и поехало всё по кругу. В итоге нам необходимо было бы **lazy loading** который опять же есть в hibernate по умолчанию.
-
-4.  **Множество других более мелких проблем**. Такие как наследование в классах, сравнение объектов (по первичному ключу в СУБД и equals в Java), кэширование, управление транзакциями.
+    CREATE TABLE users
+    (
+        username  VARCHAR(128) PRIMARY KEY,
+        firstname VARCHAR(128),
+        lastname  VARCHAR(128),
+        birt\_date DATE,
+        age       INT
+    );
 
 
-ORM
----
+![](src/main/resources/h-002-1.png)
 
-Из этих проблем выводим такое понятие как **ORM**. **ORM (Object Relational Mapping)** - процесс преобразования объектно-ориентированной модели в реляционную и наоборот.
-
-![](src/main/resources/h-001-4.png)
-
-Т.е. по сути то, что делали на JDBC, но делали это в ручную при помощи маппинга. Чтобы не писать все это каждый раз в ручную у нас есть **Hibernate**.
-
-Hibernate
----------
-
-**Hibernate** - это инструмент, который автоматизирует процесс преобразования объектно-ориентированной модели в реляционную и наоборот (ORM Framework).
-
-![](src/main/resources/h-001-5.png)
-
-Вместо JDBC у нас будет Hibernate и для общения с БД мы будем создавать соответствующие сущности Entities. И все что нам необходимо будет сделать - это познакомиться с инструментами Hibernate, его аннотациями, внутренним устройством который поможет нам автоматизировать весь процесс ORM.
+Теперь все настроено.
