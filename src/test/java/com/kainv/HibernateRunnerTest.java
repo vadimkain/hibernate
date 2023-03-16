@@ -1,5 +1,6 @@
 package com.kainv;
 
+import com.kainv.entity.Birthday;
 import com.kainv.entity.User;
 import org.junit.jupiter.api.Test;
 
@@ -22,11 +23,7 @@ class HibernateRunnerTest {
     @Test
     void checkReflectionApi() throws SQLException, IllegalAccessException {
         User user = User.builder()
-                .username("kainv@gmail.com")
-                .firstname("Vadim")
-                .lastname("Kain")
-                .birthDate(LocalDate.of(2000, 1, 19))
-                .age(20)
+//                Здесь нам в принципе ничего не надо
                 .build();
 
         String sql = """

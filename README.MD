@@ -1,23 +1,9 @@
-007 Type converters
-===================
+008 Custom attribute converter
+==============================
 
-Если обратимся к курсу JDBC, где устанавливали определенные типы данных для PreparedStatement, то в случае когда он не соответствовал (например был маппинг соответствующих внешних ключей) - мы извлекали id. В другом случае из TimeStamp преобразовывали в LocalDateTime. В случае сложных сущностей мы обращались к соответствующим Dao и там делали тоже запрос на findById(). **Как Hibernate поступает в таком случае?**
+В 007 мы разобрались как hibernate преобразовывает java-типы в sql-типы и наоборот используя реализации интерфейса `Type`. Есть эти реализации практически на любые случаи жизни. Но все таки в каких-то ситуациях хотим написать свой тип. В этом случае нам необходимо будет написать свою реализацию либо второй вариант - это написать свой конвертер. Для этого в Type есть специальный класс: `AttributeConverter<From, To>`. Для того чтобы он у нас срабатывал нужно написать свой конвертер и реализовать один единственный интерфейс.
 
-Всё довольно просто. В классе `Configuration` есть поле `private List<BasicType> basicTypes;`. Это список всех типов, которые поддерживает хайбернет и он может преобразовывать один тип в другой. `BasicType` наследуется от `Type`. Это самый главный интерфейс для всех типов в Hibernate. Если посмотрим на все его реализации, то увидим все типы, которые может преобразовывать из одного типа в другой. Следственно, мы **не можем** придумать какой-то свой тип и без какого-то дополнительного написания кода добится того, чтобы хайбернет его преобразовал в соответствующий SQL тип.
-
-Именно благодаря этим типам мы можем также преобразовывать даже сложные маппинги между сущностями.
-
-Если мы хотим написать свой тип данных, то нам нужно всего лишь реализовать интерфейс `Type` или `UserType` - они более облегченные. Как пример, из уже существующих реализованный UserType'ов есть `EnumType`. Их также можно использовать, что позволяет нам создавать любые собственные Enum'ы и он будет их преобразовывать в соответствующий SQL. Например, если создадим класс `enum Role` и в нём будет следующее:
-
-    package com.kainv.entity;
-
-    public enum Role {
-        USER, ADMIN
-    }
-
-
-
-И в `User` добавим соответствующую колонку:
+Попробуем реализовать. Для этого в нашем `User` создадим специальный класс, в entity засунем его. Называться будет `Birthday`. Сделаем его `record` и у него будет одно единственное поле `LocalDate birthDate`. В User удалим поле age, а LocalDate birthDate заменим на `Birthday birthDate`:
 
     @Data
     @NoArgsConstructor
@@ -31,26 +17,113 @@
         private String firstname;
         private String lastname;
         @Column(name = "birth\_date")
-        private LocalDate birthDate;
-        private Integer age;
+        private Birthday birthDate;
+        @Enumerated(EnumType.STRING)
+        private Role role;
+    }
+
+    
+
+    package com.kainv.entity;
+    
+    import java.time.LocalDate;
+    
+    public record Birthday (LocalDate birthDate) {
+    }
+
+
+Создадим метод `getAge()` который будет определять разницу между ДР и текущей датой.
+
+    public record Birthday(LocalDate birthDate) {
+        public long getAge() {
+            return ChronoUnit.YEARS.between(birthDate, LocalDate.now());
+        }
+    }
+
+
+Осталось создать конвертер. Для этого создадим его в директории converter и назовем `BirthdayConverter`, он должен реализовывать один единственный интерфейс `AttributeConverter<From, To>`:
+
+    package com.kainv.converter;
+    
+    import com.kainv.entity.Birthday;
+    
+    import javax.persistence.AttributeConverter;
+    import java.util.Date;
+    
+    public class BirthdayConverter implements AttributeConverter<Birthday, Date> {
+        @Override
+        public Date convertToDatabaseColumn(Birthday birthday) {
+            return null;
+        }
+    
+        @Override
+        public Birthday convertToEntityAttribute(Date date) {
+            return null;
+        }
+    }
+
+
+*   `Date convertToDatabaseColumn()` - когда нужно преобразовать java-объект в SQL.
+*   `Birthday convertToEntityAttribute()` - когда считываем с SQL и переводим в java-объект.
+
+    package com.kainv.converter;
+
+    import com.kainv.entity.Birthday;
+
+    import javax.persistence.AttributeConverter;
+    import java.sql.Date;
+    import java.util.Optional;
+
+    public class BirthdayConverter implements AttributeConverter<Birthday, Date> {
+    @Override
+    public Date convertToDatabaseColumn(Birthday birthday) {
+    //        Проверяем, какое значение пришло (null/not null)
+    return Optional.ofNullable(birthday)
+    //                Извлекаем дату
+    .map(Birthday::birthDate)
+    //                Преобразовываем из java.sql.Date
+    .map(Date::valueOf)
+    //                В противном случае возвращаем null
+    .orElse(null);
+    }
+
+        @Override
+        public Birthday convertToEntityAttribute(Date date) {
+    //        Проверяем, какое значение пришло (null/not null)
+    return Optional.ofNullable(date)
+    //                Преобразовываем в LocalDate
+    .map(Date::toLocalDate)
+    //                И создаём класс Birthday
+    .map(Birthday::new)
+    //                Иначе возвращаем null, если не пришла date
+    .orElse(null);
+    }
+    }
+
+
+Теперь идём в нашу сущность `User` и теперь мы должны подсказать hibernate что он должен использовать именно этот конвертер (`BirthdayConverter`) для преобразования в birthDate и наоборот. Для этого есть специальная аннотация `@Convert()`, в котором есть несколько методов, но основной из них это `converter`, где указываем класс конвертера:
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Entity
+    @Table(name = "users", schema = "public")
+    public class User {
+        @Id
+        private String username;
+        private String firstname;
+        private String lastname;
+        @Convert(converter = BirthdayConverter.class)
+        @Column(name = "birth\_date")
+        private Birthday birthDate;
+        @Enumerated(EnumType.STRING)
         private Role role;
     }
 
 
-Зайдём в SQL и добавим этот role, но как целочисленный тип:
 
-    CREATE TABLE users
-    (
-        username  VARCHAR(128) PRIMARY KEY,
-        firstname VARCHAR(128),
-        lastname  VARCHAR(128),
-        birt\_date DATE,
-        age       INT,
-        role      INT
-    )
-
-
-Теперь, в `HibernateRunner` мы можем в нашем пользователе добавить роль ADMIN:
+Теперь Hibernate будет знать как использовать наш AttributeConverterType. Идём в HibernateRunner, поправляем User user:
 
     public class HibernateRunner {
         public static void main(String\[\] args) {
@@ -73,8 +146,7 @@
                         .username("kainv1@gmail.com")
                         .firstname("Vadim")
                         .lastname("Kain")
-                        .birthDate(LocalDate.of(2000, 1, 19))
-                        .age(20)
+                        .birthDate(new Birthday(LocalDate.of(2000, 1, 19)))
                         .role(Role.ADMIN)
                         .build();
 
@@ -86,11 +158,17 @@
     }
 
 
-Запустим и посмотрим что получится:
+И так же поправим наш тест:
 
-![](src/main/resources/precis/h-007-1.png)
+    class HibernateRunnerTest {
+        @Test
+        void checkReflectionApi() throws SQLException, IllegalAccessException {
+            User user = User.builder()
+    //                Здесь нам в принципе ничего не надо
+                    .build();
 
-Видим 1, это ordinal нашего enum'а ADMIN. Ordinal нехорошо исиользовать поскольку если изменится порядок enum'ов, то это не будет работать, в БД придется делать update. Следовательно, в этой ситуации лучше делать строковое представление:
+
+Осталось поправить нашу БД:
 
     CREATE TABLE users
     (
@@ -98,12 +176,49 @@
         firstname VARCHAR(128),
         lastname  VARCHAR(128),
         birth\_date DATE,
-        age       INT,
         role      VARCHAR(32)
     );
 
 
-Для того чтобы по умолчанию убрать использование ordinal, а использовать строковое представление (т.е. наш name), то для этого есть соответствующая аннотация `@Enumerated`, в которую передаём `EnumType.ORDINAL/STRING`:
+Запускаем HibernateRunner и проверим наших пользователей в БД:
+
+![](src/main/resources/precis/h-008-1.png)
+
+Можно ещё проще сделать и подсказать хайбернейту, чтобы он автоматически использовал этот конвертер когда видит наш birthDate в любой из наших сущностей чтобы нам не приходилось каждый раз прописывать `@Converter` над соответствующим полем. В таком случае, мы в `Configuration` должны указать этот конвертер при помощи `configuration.addAttributeConverter(new BirthdayConverter(), true);` обязательно ставим true чтобы не приходилось вручную ставить аннотацию `@Convert`. Или вместо true поставить над конвертером аннотацию `@Converter(autoApply = true)`:
+
+    @Converter(autoApply = true)
+    public class BirthdayConverter implements AttributeConverter<Birthday, Date> {
+    
+
+    public class HibernateRunner {
+        public static void main(String\[\] args) {
+            Configuration configuration = new Configuration();
+    //        configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
+    //        configuration.addAnnotatedClass(User.class);
+            configuration.addAttributeConverter(new BirthdayConverter());
+            configuration.configure();
+
+            try (
+                    SessionFactory sessionFactory = configuration.buildSessionFactory();
+                    Session session = sessionFactory.openSession()
+            ) {
+                session.beginTransaction();
+
+                User user = User.builder()
+                        .username("kainv@gmail.com")
+                        .firstname("Vadim")
+                        .lastname("Kain")
+                        .birthDate(new Birthday(LocalDate.of(2000, 1, 19)))
+                        .role(Role.ADMIN)
+                        .build();
+
+                session.save(user);
+
+                session.getTransaction().commit();
+            }
+        }
+    }
+    
 
     @Data
     @NoArgsConstructor
@@ -116,14 +231,14 @@
         private String username;
         private String firstname;
         private String lastname;
+    //    @Convert(converter = BirthdayConverter.class)
         @Column(name = "birth\_date")
-        private LocalDate birthDate;
-        private Integer age;
+        private Birthday birthDate;
         @Enumerated(EnumType.STRING)
         private Role role;
     }
 
 
-Запускаем HibernateRunner и видим результат:
+Вызываем `HibernateRunner` и смотрим результат:
 
-![](src/main/resources/precis/h-007-2.png)
+![](src/main/resources/precis/h-008-2.png)

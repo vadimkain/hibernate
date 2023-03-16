@@ -1,5 +1,7 @@
 package com.kainv;
 
+import com.kainv.converter.BirthdayConverter;
+import com.kainv.entity.Birthday;
 import com.kainv.entity.Role;
 import com.kainv.entity.User;
 import org.hibernate.Session;
@@ -15,11 +17,8 @@ public class HibernateRunner {
         Configuration configuration = new Configuration();
 //        configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
 //        configuration.addAnnotatedClass(User.class);
+        configuration.addAttributeConverter(new BirthdayConverter());
         configuration.configure();
-
-//        Failed to resolve org.junit.platform:junit-platform-launcher:1.7.2
-
-//        11:33
 
         try (
                 SessionFactory sessionFactory = configuration.buildSessionFactory();
@@ -28,11 +27,10 @@ public class HibernateRunner {
             session.beginTransaction();
 
             User user = User.builder()
-                    .username("kainv1@gmail.com")
+                    .username("kainv@gmail.com")
                     .firstname("Vadim")
                     .lastname("Kain")
-                    .birthDate(LocalDate.of(2000, 1, 19))
-                    .age(20)
+                    .birthDate(new Birthday(LocalDate.of(2000, 1, 19)))
                     .role(Role.ADMIN)
                     .build();
 
