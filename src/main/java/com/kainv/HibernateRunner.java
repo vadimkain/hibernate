@@ -1,5 +1,6 @@
 package com.kainv;
 
+import com.kainv.entity.Role;
 import com.kainv.entity.User;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -27,11 +28,12 @@ public class HibernateRunner {
             session.beginTransaction();
 
             User user = User.builder()
-                    .username("kainv@gmail.com")
+                    .username("kainv1@gmail.com")
                     .firstname("Vadim")
                     .lastname("Kain")
                     .birthDate(LocalDate.of(2000, 1, 19))
                     .age(20)
+                    .role(Role.ADMIN)
                     .build();
 
             session.save(user);

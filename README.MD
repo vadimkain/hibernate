@@ -1,181 +1,129 @@
-006 Класс Session
-=================
+007 Type converters
+===================
 
-Разберёмся, как класс Session при помощи метода save() строит запросы. `Session` - это всего лишь обертка вокруг `Connection` которая работает с нашими сущностями. По другому - отслеживает полный жизненный цикл сущностей. Самые основные методы в `Session` - это `save()`, `update()`, `saveOrUpdate()` который либо сохраняет, либо обновляет в зависимости от того, есть ли такая сущность в базе данных или нет. И как раз таки в этом случае нам очень помогут синтетические первичные ключи в БД. Поэтому их и предпочтительно использовать. Далее, `delete()` чтобы удалять сущность либо получить её по id: `get()`. Если нам нужны более сложные вопросы, то для этого есть специальный функционал `createQuery()`, в который передаём либо строку, либо `CriteriaDelete`/`CriteriaDelete`/`CriteriaUpdate`. Получается, что именно объект `Session` создаёт красивый SQL запрос. Делает это через Reflection API.
+Если обратимся к курсу JDBC, где устанавливали определенные типы данных для PreparedStatement, то в случае когда он не соответствовал (например был маппинг соответствующих внешних ключей) - мы извлекали id. В другом случае из TimeStamp преобразовывали в LocalDateTime. В случае сложных сущностей мы обращались к соответствующим Dao и там делали тоже запрос на findById(). **Как Hibernate поступает в таком случае?**
 
-Разработаем простейший пример. Для этого создадим тест на HibernateRunner, для того чтобы вынести весь функционал из исходников в тесты:
+Всё довольно просто. В классе `Configuration` есть поле `private List<BasicType> basicTypes;`. Это список всех типов, которые поддерживает хайбернет и он может преобразовывать один тип в другой. `BasicType` наследуется от `Type`. Это самый главный интерфейс для всех типов в Hibernate. Если посмотрим на все его реализации, то увидим все типы, которые может преобразовывать из одного типа в другой. Следственно, мы **не можем** придумать какой-то свой тип и без какого-то дополнительного написания кода добится того, чтобы хайбернет его преобразовал в соответствующий SQL тип.
 
-    package com.kainv;
+Именно благодаря этим типам мы можем также преобразовывать даже сложные маппинги между сущностями.
 
-    import com.kainv.entity.User;
-    import org.junit.jupiter.api.Test;
+Если мы хотим написать свой тип данных, то нам нужно всего лишь реализовать интерфейс `Type` или `UserType` - они более облегченные. Как пример, из уже существующих реализованный UserType'ов есть `EnumType`. Их также можно использовать, что позволяет нам создавать любые собственные Enum'ы и он будет их преобразовывать в соответствующий SQL. Например, если создадим класс `enum Role` и в нём будет следующее:
 
-    import java.time.LocalDate;
+    package com.kainv.entity;
 
-    import static org.junit.jupiter.api.Assertions.\*;
-
-    class HibernateRunnerTest {
-        @Test
-        void checkReflectionApi() {
-            User user = User.builder()
-                    .username("kainv@gmail.com")
-                    .firstname("Vadim")
-                    .lastname("Kain")
-                    .birthDate(LocalDate.of(2000, 1, 19))
-                    .age(20)
-                    .build();
-
-        }
+    public enum Role {
+        USER, ADMIN
     }
 
 
-Через reflection API мы можем получить класс пришедшей сущности:
 
-    package com.kainv;
+И в `User` добавим соответствующую колонку:
 
-    import com.kainv.entity.User;
-    import org.junit.jupiter.api.Test;
-
-    import javax.persistence.Column;
-    import javax.persistence.Table;
-    import java.lang.reflect.Field;
-    import java.time.LocalDate;
-    import java.util.Arrays;
-    import java.util.Optional;
-    import java.util.stream.Collectors;
-
-    import static java.util.stream.Collectors.\*;
-    import static java.util.stream.Collectors.joining;
-    import static org.junit.jupiter.api.Assertions.\*;
-
-    class HibernateRunnerTest {
-        @Test
-        void checkReflectionApi() {
-            User user = User.builder()
-                    .username("kainv@gmail.com")
-                    .firstname("Vadim")
-                    .lastname("Kain")
-                    .birthDate(LocalDate.of(2000, 1, 19))
-                    .age(20)
-                    .build();
-
-            String sql = """
-                    insert
-                    into
-                    %s
-                    (%s)
-                    values
-                    (%s)
-                    """;
-
-    //        Получаем аннотацию Table, которую ставили, чтобы описать название таблицы и схемы где находится наш юзер
-            String tableName = Optional.ofNullable(user.getClass().getAnnotation(Table.class))
-                    .map(table -> table.schema() + '.' + table.name())
-    //                Если такой аннотации нет, то берём название класса
-                    .orElse(user.getClass().getName());
-
-    //        Получаем поля из класса
-            Field\[\] declaredFields = user.getClass().getDeclaredFields();
-            String columnNames = Arrays.stream(declaredFields)
-    //                У каждого поля получаем аннотацию @Column
-                    .map(field -> Optional.ofNullable(field.getAnnotation(Column.class))
-    //                        Если такая аннотация есть, то получаем название
-                            .map(Column::name)
-    //                        В противном случае получаем название поля
-                            .orElse(field.getName()))
-                    .collect(joining(", "));
-
-            String columnValues = Arrays.stream(declaredFields)
-    //                Каждое поле преобразовываем в знак вопроса
-                    .map(field -> "?")
-                    .collect(joining(", "));
-
-            System.out.println(sql.formatted(tableName, columnNames, columnValues));
-        }
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Entity
+    @Table(name = "users", schema = "public")
+    public class User {
+        @Id
+        private String username;
+        private String firstname;
+        private String lastname;
+        @Column(name = "birth\_date")
+        private LocalDate birthDate;
+        private Integer age;
+        private Role role;
     }
 
 
-Запустим тест получим результат:
+Зайдём в SQL и добавим этот role, но как целочисленный тип:
 
-![](src/main/resources/precis/h-006-1.png)
+    CREATE TABLE users
+    (
+        username  VARCHAR(128) PRIMARY KEY,
+        firstname VARCHAR(128),
+        lastname  VARCHAR(128),
+        birt\_date DATE,
+        age       INT,
+        role      INT
+    )
 
-Теперь, все что осталось сделать - это в PreparedStatement засунуть этот SQL и циклом пробежаться по каждому полю. И здесь нам вновь нужен Reflection API.
 
-    package com.kainv;
-    
-    import com.kainv.entity.User;
-    import org.junit.jupiter.api.Test;
-    
-    import javax.persistence.Column;
-    import javax.persistence.Table;
-    import java.lang.reflect.Field;
-    import java.sql.Connection;
-    import java.sql.PreparedStatement;
-    import java.sql.SQLException;
-    import java.time.LocalDate;
-    import java.util.Arrays;
-    import java.util.Optional;
-    import java.util.stream.Collectors;
-    
-    import static java.util.stream.Collectors.\*;
-    import static java.util.stream.Collectors.joining;
-    import static org.junit.jupiter.api.Assertions.\*;
-    
-    class HibernateRunnerTest {
-        @Test
-        void checkReflectionApi() throws SQLException, IllegalAccessException {
-            User user = User.builder()
-                    .username("kainv@gmail.com")
-                    .firstname("Vadim")
-                    .lastname("Kain")
-                    .birthDate(LocalDate.of(2000, 1, 19))
-                    .age(20)
-                    .build();
-    
-            String sql = """
-                    insert
-                    into
-                    %s
-                    (%s)
-                    values
-                    (%s)
-                    """;
-    
-    //        Получаем аннотацию Table, которую ставили, чтобы описать название таблицы и схемы где находится наш юзер
-            String tableName = Optional.ofNullable(user.getClass().getAnnotation(Table.class))
-                    .map(table -> table.schema() + '.' + table.name())
-    //                Если такой аннотации нет, то берём название класса
-                    .orElse(user.getClass().getName());
-    
-    //        Получаем поля из класса
-            Field\[\] declaredFields = user.getClass().getDeclaredFields();
-            String columnNames = Arrays.stream(declaredFields)
-    //                У каждого поля получаем аннотацию @Column
-                    .map(field -> Optional.ofNullable(field.getAnnotation(Column.class))
-    //                        Если такая аннотация есть, то получаем название
-                            .map(Column::name)
-    //                        В противном случае получаем название поля
-                            .orElse(field.getName()))
-                    .collect(joining(", "));
-    
-            String columnValues = Arrays.stream(declaredFields)
-    //                Каждое поле преобразовываем в знак вопроса
-                    .map(field -> "?")
-                    .collect(joining(", "));
-    
-            System.out.println(sql.formatted(tableName, columnNames, columnValues));
-    
-            Connection connection = null;
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-    //        Теперь, в этом preparedStatement циклом нужно установить все поля
-            for (Field declredField : declaredFields) {
-    //            Для того чтобы получить значение
-                declredField.setAccessible(true);
-    //            По хорошему должен быть итератор, но тут опустим
-                preparedStatement.setObject(1, declredField.get(user));
+Теперь, в `HibernateRunner` мы можем в нашем пользователе добавить роль ADMIN:
+
+    public class HibernateRunner {
+        public static void main(String\[\] args) {
+            Configuration configuration = new Configuration();
+    //        configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
+    //        configuration.addAnnotatedClass(User.class);
+            configuration.configure();
+
+    //        Failed to resolve org.junit.platform:junit-platform-launcher:1.7.2
+
+    //        11:33
+
+            try (
+                    SessionFactory sessionFactory = configuration.buildSessionFactory();
+                    Session session = sessionFactory.openSession()
+            ) {
+                session.beginTransaction();
+
+                User user = User.builder()
+                        .username("kainv1@gmail.com")
+                        .firstname("Vadim")
+                        .lastname("Kain")
+                        .birthDate(LocalDate.of(2000, 1, 19))
+                        .age(20)
+                        .role(Role.ADMIN)
+                        .build();
+
+                session.save(user);
+
+                session.getTransaction().commit();
             }
         }
     }
 
 
-Таким образом получаем у нашего филда значения об объекте user. Всё это происходит под капотом Session.
+Запустим и посмотрим что получится:
+
+![](src/main/resources/precis/h-007-1.png)
+
+Видим 1, это ordinal нашего enum'а ADMIN. Ordinal нехорошо исиользовать поскольку если изменится порядок enum'ов, то это не будет работать, в БД придется делать update. Следовательно, в этой ситуации лучше делать строковое представление:
+
+    CREATE TABLE users
+    (
+        username  VARCHAR(128) PRIMARY KEY,
+        firstname VARCHAR(128),
+        lastname  VARCHAR(128),
+        birth\_date DATE,
+        age       INT,
+        role      VARCHAR(32)
+    );
+
+
+Для того чтобы по умолчанию убрать использование ordinal, а использовать строковое представление (т.е. наш name), то для этого есть соответствующая аннотация `@Enumerated`, в которую передаём `EnumType.ORDINAL/STRING`:
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Entity
+    @Table(name = "users", schema = "public")
+    public class User {
+        @Id
+        private String username;
+        private String firstname;
+        private String lastname;
+        @Column(name = "birth\_date")
+        private LocalDate birthDate;
+        private Integer age;
+        @Enumerated(EnumType.STRING)
+        private Role role;
+    }
+
+
+Запускаем HibernateRunner и видим результат:
+
+![](src/main/resources/precis/h-007-2.png)
