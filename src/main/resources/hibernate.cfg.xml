@@ -11,8 +11,8 @@
         <!--        Указываем диалект -->
         <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL10Dialect</property>
 
-        <property name="show_sql"/>
-        <property name="format_sql"/>
+        <property name="show_sql">true</property>
+        <property name="format_sql">true</property>
 
         <mapping class="com.kainv.entity.User"/>
         <!-- DB schema will be updated if needed -->

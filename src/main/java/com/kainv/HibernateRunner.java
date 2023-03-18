@@ -28,21 +28,22 @@ public class HibernateRunner {
         ) {
             session.beginTransaction();
 
-            User user = User.builder()
-                    .username("kainv@gmail.com")
-                    .firstname("Vadim")
-                    .lastname("Kain")
-                    .info("""
-                            {
-                                "name" : "Vadim",
-                                "id" : 25
-                            }
-                            """)
-                    .birthDate(new Birthday(LocalDate.of(2000, 1, 19)))
-                    .role(Role.ADMIN)
-                    .build();
+//            User user = User.builder()
+//                    .username("kainv9@gmail.com")
+//                    .firstname("Vadim")
+//                    .lastname("Kain")
+//                    .info("""
+//                            {
+//                                "name" : "Vadim",
+//                                "id" : 25
+//                            }
+//                            """)
+//                    .birthDate(new Birthday(LocalDate.of(2000, 1, 19)))
+//                    .role(Role.ADMIN)
+//                    .build();
+//            session.delete(user);
 
-            session.save(user);
+            session.get(User.class, "kainv@gmail.com");
 
             session.getTransaction().commit();
         }
