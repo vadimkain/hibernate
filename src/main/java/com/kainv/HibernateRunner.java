@@ -4,6 +4,7 @@ import com.kainv.converter.BirthdayConverter;
 import com.kainv.entity.Birthday;
 import com.kainv.entity.Role;
 import com.kainv.entity.User;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
@@ -18,6 +19,7 @@ public class HibernateRunner {
 //        configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
 //        configuration.addAnnotatedClass(User.class);
         configuration.addAttributeConverter(new BirthdayConverter());
+        configuration.registerTypeOverride(new JsonBinaryType());
         configuration.configure();
 
         try (
@@ -30,6 +32,12 @@ public class HibernateRunner {
                     .username("kainv@gmail.com")
                     .firstname("Vadim")
                     .lastname("Kain")
+                    .info("""
+                            {
+                                "name" : "Vadim",
+                                "id" : 25
+                            }
+                            """)
                     .birthDate(new Birthday(LocalDate.of(2000, 1, 19)))
                     .role(Role.ADMIN)
                     .build();
