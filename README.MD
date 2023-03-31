@@ -1,73 +1,100 @@
-02 - 001 Logging. Теория
-========================
+02 - 002 Logging. Файл log4j.xml
+================================
 
-Когда выполняем наш код, то у нас довольно много различных сообщений от Hibernate, но явно таких сообщений не делали. Это встроенная система логирования в хайбернете. Система логирования гораздо сложнее чем `System.out.println()`. Разберёмся более подробно в них.
+В коде у нас всегда будет slf4j, его классы и аннотации которые позволяют изменять логгер на ходу без изменения в коде. Каждый из логеров конфигурируется соответствующим текстовым файлом (properties или xml), но в нашем случае будем использовать xml формат. Он должен лежать в каталоге resources и иметь название **log4j.xml**. Структура выглядит следующим образом:
 
-Для начала представим наше обычное приложение, которое написали, развернули на удаленном сервере и им пользуются наши пользователи. Но к сожалению, если не будем подключать никакие системы логирования либо метрик, то наше приложение будет черным ящиком (black box) и если что-то пойдёт не так, то мы даже не узнаем об этом, а если нужно будет еще и решить эту проблему, то тем более. Наша задача: из black box сделать white box. Для этого у нас есть система логирования и метрик. При чем они бывают довольно разными.
-
-![](src/main/resources/precis/h-02/h-02-001-1.png)
-
-В случае логирования здесь все довольно понятно. Это просто сообщения об какой-то информации, возможно ошибке, возможно просто уведомление либо warning. Суть в том, что это простое сообщение которое может анализировать программист. В случае же метрик это какая-то статистика о приложении. Например, как часто обращается код в БД или какая чаще нагрузка на приложение (т.е. **RPS** - Request Per Second) либо то, как долго ждёт пользователь своего ответа от приложения как только он отправил какой-то запрос. Таких статистик можно делать очень много в зависимости от логики приложения и нужд.
-
-Возвращаясь к логированию, мы чаще всего прибегали к `System.out.println()`. Но это работает только пока разрабатываем приложение потому что наша консоль есть в среде разработки. Но если развернем приложение на удаленном сервере, то там у нас не будет никакой консоли потому что нет среды разработки. Следственно мы можем использовать **File**. Т.е. все сообщения помещать в файл, это неудобно поскольку в реальных приложениях эти файлы невероятно больших размеров. Гораздо удобнее это складывать в базу данных ( **Database**) и тогда обычным SQL запросом можно доставать к примеру Error'ы либо Stacktrace по этим error'ам, либо warn, что гораздо удобнее уже для программистов. Но в реальных приложениях отправляет эти сообщения какому-то удаленному серверу, который занимается логированием через **TCP/IP** соединение. Уже это приложение знает как анализировать логи либо метрики.
-
-Уже есть множество готовых фреймворков для логов и метрик. Для логов это например **ELK - Elasticksearch, Logstash, Kibana** который вмещает в себе три инструмента (и как хранилище, и как парсер логов, и как view для отображения сообщений). В случае метрик - это самый известный **Prometheus** (анализирует пользовательские метрики, более того можно прикручивать различные системы alert'инга для того чтобы в случае реальных систем отправить сообщение на телефон или канал если срочно надо отреагировать на ошибку), **Grafana**.
-
-Пока наша задача - подключить и использовать систему логирования в Hibernate. Есть многоразличных логов.
-
-![](src/main/resources/precis/h-02/h-02-001-2.png)
-
-Систем логирования довольно много и мы можем захотеть изменить систему логирования в нашем приложении. Если приводить аналог, то это что-то вроде Hibernate - т.е. реализация JPA, а сама JPA (т.е. набор интерфейсов которые можем использовать) это **slf4j api**. Т.е. используем API **slf4j**, а он уже использует тот логер который ему подставляем (log4j, logback и т.д.). Для некоторых логгеров нужен своего рода **binding**, т.е. адаптера как обращаться к нему. Наша задача в нашем приложении - просто использовать готовый API **slf4j**, а в линковщике подключить необходимую зависимость (логинг).
-
-Для простоты и удобства поиска придумали так называемые **Log levels**:
-
-![](src/main/resources/precis/h-02/h-02-001-3.png)
-
-Т.е. когда мы генерируем какую-ту ошибку или просто сообщение в консоль/файл (неважно) - мы присваиваем этому сообщению соответсвующий уровень. Их шесть штук. Они не зря называются уровнями потому что чем выше уровень (начиная от TRACE заканчивая FATAL) тем ошибка жёще. Более того, когда будем подключать систему логирования - мы должны будем выставить соответствующий уровень, который хотим отображать программисту. Например, если укажем INFO, то будем видеть только ошибки INFO и выше.
-
-Подключим slf4j в приложение
-----------------------------
-
-Идём в линковщик и видим, что уже подключили slf4j api:
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>1.7.30</version>
-        </dependency>
+    <?xml version="1.0" encoding="UTF-8" ?>
+            <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+    
+    <log4j:configuration>
+    
+        <appender name="console" class="org.apache.log4j.ConsoleAppender">
+            <param name="target" value="System.out"/>
+    
+            <layout class="org.apache.log4j.PatternLayout">
+                <param name="ConversionPattern"
+                       value="\[%d{yyyy-MM-dd HH:mm:ss} %p \[%c: %L\] %m%n\]"/>
+            </layout>
+        </appender>
+    
+        <root>
+            <level value="INFO"/>
+            <appender-ref ref="console"/>
+        </root>
+    
+    </log4j:configuration>
 
 
-Мы его подключили потому что наш `<artifactId>hibernate-types-52</artifactId>` требовал его. Но если хотим использовать log4j, то нам нужно использовать **binding** чтобы slf4j знала как работать с log4j. Для этого нам нужно подключить дополнительную зависимость:
+Здесь есть всего два основных момента: это `<appender>` и логгер (`<root>`). Appender занимается тем, что берёт лог сообщения и отправляет туда, куда укажем, в данном случае `class="org.apache.log4j.ConsoleAppender"` отправляет его на `name="console"` и мы будем его видеть в `value="System.out"`. Т.е. как будто написали `System.out.println()`, а формат этого сообщения задаём с помощью `<layout>`, а именно в нашем случае это `class="org.apache.log4j.PatternLayout"`. Этот паттерн имеет множество специальных символов, которые зарезервированы ( `<param name="ConversionPattern" value="[%d{yyyy-MM-dd HH:mm:ss} %p [%c: %L] %m%n]"`). Нетрудно предположить, что _%d{yyyy-MM-dd HH:mm:ss}_ - время, _%p_ - приоритет (ERROR, FATAL, и т.д.), _\[%c: %L\]_ - класс в котором произошло сообщение и строка кода, _%m%n_ само сообщение. Более подробно можно почитать в документации. Это что-то вроде регулярных выражений.
 
-**pom.xml**
+`<root>` это сам логгер, он единственный логер, но их может быть несколько как и appender'ов. Но суть этого логгера в том, что указываем log-level в `<level value=""/>` с которого начинаем логировать сообщение. Можно указать ALL, тогда будут отображены все сообщения. Второе главное поле это `<appender-ref ref="console"/>` где указываем названием нашего аппендера. В нашем случае, это console. Если таких аппендеров несколько, то можем указать несколько. Все зависит от того, куда и как хотим отправлять наши сообщения. Это своего рода фасад, который решает уже куда отправлять сообщения.
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.32</version>
-        </dependency>
+Перейдём в HibernateRunner.java и добавим этот логгер
+-----------------------------------------------------
+
+Обычно создаётся один логгер из библиотеки _org.slf4j_ чтобы потом можно было динамически добавить любой из логгеров:
+
+    import org.slf4j.LoggerFactory;
+    import org.slf4j.Logger;
+
+    public class HibernateRunner {
+        public static final Logger logger = LoggerFactory.getLogger(HibernateRunner.class);
 
 
-Более того, эта зависимость имеет транзитивную зависимость на slf4j следственно мы можем убрать зависимость `<artifactId>slf4j-nop</artifactId>` в pom.xml
+В таком случае, в сообщении мы будем видеть в каком классе произошёл message. Следовательно, логгер как раз таки и хранит этот класс HibernateRunner. Далее, мы хотим написать какое-то сообщение:
 
-**pom.xml**
+**HibernateRunner.java**
 
-        <!-- https://mvnrepository.com/artifact/com.vladmihalcea/hibernate-types-52 -->
-        <dependency>
-            <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-52</artifactId>
-            <version>2.12.1</version>
-        </dependency>
+    package com.kainv;
 
-        <!--        <dependency>-->
-        <!--            <groupId>org.slf4j</groupId>-->
-        <!--            <artifactId>slf4j-nop</artifactId>-->
-        <!--            <version>1.7.30</version>-->
-        <!--        </dependency>-->
+    import com.kainv.entity.User;
+    import com.kainv.util.HibernateUtil;
+    import org.hibernate.Session;
+    import org.hibernate.SessionFactory;
+    import org.hibernate.Transaction;
+    import org.slf4j.LoggerFactory;
+    import org.slf4j.Logger;
 
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12 -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.32</version>
-        </dependency>
+    public class HibernateRunner {
+        public static final Logger logger = LoggerFactory.getLogger(HibernateRunner.class);
+
+        public static void main(String\[\] args) {
+            User user = User.builder()
+                    .username("kain@gmail.com")
+                    .lastname("Kain")
+                    .firstname("Vadim")
+                    .build();
+
+    //        Пишем лог уровня INFO
+            logger.info("User entity is in transient state, object: {}", user);
+
+            try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
+                Session session1 = sessionFactory.openSession();
+                try (session1) {
+                    Transaction transaction = session1.beginTransaction();
+
+    //                Создаём лог уровня TRACE
+                    logger.trace("Transaction is created, {}", transaction);
+
+                    session1.saveOrUpdate(user);
+                    logger.trace("User is in persistent state: {} session {}", user, session1);
+
+                    session1.getTransaction().commit();
+                }
+
+    //            Создаём лог уровня WARN. Это не ошибка, но стоит обратить внимание программисту
+                logger.warn("User is in detached state: {}, session is closed {}", user, session1);
+            } catch (Exception exception) {
+    //            Создаём лог уровня ERROR и отображаем весь stacktrace
+                logger.error("Exception occurred", exception);
+                throw exception;
+            }
+        }
+    }
+
+
+Вызовем класс `HibernateRunner` и посмотрим, что у нас отобразится:
+
+![](src/main/resources/precis/h-02/h-02-002-1.png)
+
+Видим, что все красиво отображается без красных сообщений. Видим, что информация нам выводится в том виде, в котором её прописали в log4j.xml.
