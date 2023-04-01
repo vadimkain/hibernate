@@ -1,5 +1,8 @@
-[2023-04-01 15:18:33, 185] TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 118] Releasing result set [org.postgresql.jdbc.PgResultSet@6587305a]
-[2023-04-01 15:18:33, 185] TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 164] Closing result set [org.postgresql.jdbc.PgResultSet@6587305a]
-[2023-04-01 15:18:33, 185] TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 97] Releasing statement [select user_.username, user_.birth_date as birth_da2_0_, user_.firstname as firstnam3_0_, user_.info as info4_0_, user_.lastname as lastname5_0_, user_.role as role6_0_ from public.users user_ where user_.username='kain@gmail.com']
-[2023-04-01 15:18:33, 185] DEBUG [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 106] HHH000387: ResultSet's statement was not registered
-[2023-04-01 15:18:33, 185] TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 180] Closing prepared statement [select user_.username, user_.birth_date as birth_da2_0_, user_.firstname as firstnam3_0_, user_.info as info4_0_, user_.lastname as lastname5_0_, user_.role as role6_0_ from public.users user_ where user_.username='kain@gmail.com']
+[2023-04-01 15:18:33, 202] DEBUG [org.hibernate.engine.transaction.internal.TransactionImpl: 98] committing
+[2023-04-01 15:18:33, 202] TRACE [org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl: 181] ResourceLocalTransactionCoordinatorImpl#beforeCompletionCallback
+[2023-04-01 15:18:33, 202] TRACE [org.hibernate.internal.SessionImpl: 2408] SessionImpl#beforeTransactionCompletion()
+[2023-04-01 15:18:33, 202] TRACE [org.hibernate.internal.SessionImpl: 481] Automatically flushing session
+[2023-04-01 15:18:33, 203] TRACE [org.hibernate.event.internal.AbstractFlushingEventListener: 75] Flushing session
+[2023-04-01 15:18:33, 203] DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener: 140] Processing flush-time cascades
+[2023-04-01 15:18:33, 204] DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener: 193] Dirty checking collections
+[2023-04-01 15:18:33, 205] TRACE [org.hibernate.event.internal.AbstractFlushingEventListener: 206] Flushing entities and processing referenced collections

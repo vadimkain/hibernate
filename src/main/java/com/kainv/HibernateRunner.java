@@ -1,5 +1,6 @@
 package com.kainv;
 
+import com.kainv.entity.PersonalInfo;
 import com.kainv.entity.User;
 import com.kainv.util.HibernateUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +12,13 @@ import org.hibernate.Transaction;
 public class HibernateRunner {
     public static void main(String[] args) {
         User user = User.builder()
-                .username("kain@gmail.com")
-                .lastname("Kain")
-                .firstname("Vadim")
+                .username("vadim@gmail.com")
+                .personalInfo(
+                        PersonalInfo.builder()
+                                .lastname("Kain")
+                                .firstname("Vadim")
+                                .build()
+                )
                 .build();
 
 //        Пишем лог уровня INFO

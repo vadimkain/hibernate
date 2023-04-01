@@ -1,113 +1,148 @@
-02 - 003 Logging. File appender
-===============================
+03 - 001 Embedded components
+============================
 
-Наш log4j конфигурируется при помощи xml. Мы пока что воспользовались `<appender>`'ом, который выводил лог сообщений в консоль. Конечно же в консоль мы могли бы выводить и через `System.out.println()` без логирования. Мощь этих логов в том, что мы можем не только в консоли выводить, а куда угодно: базы данных, файлы, сеть. Это добавляется при помощи новых `<appender>`'ов. Например, если хотим вывести в файл, то добавляем новый `<appender>`, который уже является объектом `class="org.apache.log4j.RollingFileAppender"`. Мы ему дали название `name="filter"`. Следственно, если хотим чтобы наши сообщения выводились и в файл нужно в нашем `<root>` логгере указать новый `<appender-ref ref="file"/>`:
+Дело в том, что часто на уровне java мы работает со сложными объектами, которые внутри себя содержат другие поля. И, следовательно, мы можем захотеть объединить некоторые поля сущностей (к примеру firstname, lastname) в одно поле (например personal\_information), но т.к. в SQL мы не хотим создавать какой-то встраиваемый тип который не все СУБД могут поддерживать. Следовательно, проще создать объекты на уровне java, а в SQL оставить все как есть. Или, например, в легаси базах данных очень часто есть составные первичные ключи, а следовательно вторичные которые необходимо также объединять в отдельные объекты, для того чтобы работать как с одним ключем.
 
-**log4j.xml**
+Объединим три поля: firstname, lastname, birthDate в какой-то встраиваемый компонент. Для этого создадим класс `PersonalInfo` в пакете _com.kainv.entity_ и вставим туда три поля:
 
-    <?xml version="1.0" encoding="UTF-8" ?>
-            <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
-    
-    <log4j:configuration>
-    
-        <appender name="console" class="org.apache.log4j.ConsoleAppender">
-            <param name="target" value="System.out"/>
-    
-            <layout class="org.apache.log4j.PatternLayout">
-                <param name="ConversionPattern"
-                       value="\[%d{yyyy-MM-dd HH:mm:ss}\] %p \[%c: %L\] %m%n"/>
-            </layout>
-        </appender>
-    
-        <appender name="file" class="org.apache.log4j.RollingFileAppender">
-            <param name="file" value="hibernate-starter.log"/>
-    
-            <param name="append" value="true"/>
-            <param name="maxFileSize" value="1KB"/>
-            <param name="maxBackupIndex" value="10"/>
-    
-            <layout class="org.apache.log4j.PatternLayout">
-                <param name="conversionPattern" value="\[%d{yyyy-MM-dd HH:mm:ss, SSS}\] %p \[%c: %L\] %m%n"/>
-            </layout>
-    
-            <filter class="org.apache.log4j.varia.LevelRangeFilter">
-                <param name="LevelMin" value="ALL"/>
-            </filter>
-        </appender>
-    
-        <root>
-            <level value="INFO"/>
-            <appender-ref ref="console"/>
-            <appender-ref ref="file"/>
-        </root>
-    
-    </log4j:configuration>
+    package com.kainv.entity;
+
+    import javax.persistence.Column;
+
+    public class PersonalInfo {
+        private String firstname;
+        private String lastname;
+        //    @Convert(converter = BirthdayConverter.class)
+        @Column(name = "birth\_date")
+        private Birthday birthDate;
+    }
 
 
-Далее, тут есть несколько параметров как у ConsoleAppender, это название файла ( `<param name="file" value="hibernate-starter.log"/>`), а точнее его путь где он будет лежать. Далее, что будет добавляться каждый раз новое сообщение (`<param name="append" value="true"/>`) после рестарта приложения, а не перетираться. Далее есть два интересных момента: maxFileSize проперти и maxBackupIndex. maxFileSize говорит про максимальный размер нашего файла. Если он достигает указанного размера, то создаёт новый файл. Этих файлов будет столько, сколько указали в maxBackupIndex. Следственно, как только доходим до 10 файлов - происходит роллинг (заново циклически продолжаем добавлять новые сообщения, а старые будут стираться). Далее, есть `<filter class="org.apache.log4j.varia.LevelRangeFilter">` который дополнительно фильтрует сообщения невзирая на то, что указывали в `<root>` (соответствующих логгерах).
+Здесь все те же правила, что и у обычных сущностей (должен быть конструктор без параметров, не должен быть immutable, должны быть геттеры и сеттеры и т.д.. Следовательно, Повторяем здесь все те же lombok аннотации:
 
-Запустим еще раз приложение и увидим в нашей ROOT'овой директории проекта наши файлы:
+    package com.kainv.entity;
 
-![](src/main/resources/precis/h-02/h-02-003-1.png)
+    import lombok.AllArgsConstructor;
+    import lombok.Builder;
+    import lombok.Data;
+    import lombok.NoArgsConstructor;
 
-Всё прошло ровно так, как мы указали в _log4j.xml_. Если откроем файл, то там будут видны логи. Их можно сохранить в БД по соответствующим ячейкам и далее искать нужный лог.
+    import javax.persistence.Column;
+    import javax.persistence.Embeddable;
 
-**Вернёмся** в _log4j.xml_. Кроме нескольких `<appender>`'ов может быть и несколько `<root>`'ов (логгеров). Т.е. рутовый логгер он один и самый главный и он не может не быть, но также можно добавить свои:
-
-Название логгера определяется по пакету который хотим отслеживать. Я хочу отслеживать _com.kainv_ поэтому пишем `<logger name="com.kainv">`. Теперь все лог сообщения который сделали в этом пакете в любом из классов будут попадать в этот логгер.
-
-**log4j.xml**
-
-    <!--    Логгер. Определяем пакет в котором хотим отслеживать логи -->
-    <logger name="com.kainv">
-        <!--        Указываем уровень с которого логируем-->
-        <level value="info"/>
-        <!--        Указываем аппендер -->
-        <appender-ref ref="console"/>
-    </logger>
-
-    <!--    Тоже логгер, но главный -->
-    <root>
-        <level value="info"/>
-        <appender-ref ref="console"/>
-        <appender-ref ref="file"/>
-    </root>
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    // @Embeddable говорит о том, что это встраиваемый компонент
+    @Embeddable
+    public class PersonalInfo {
+        private String firstname;
+        private String lastname;
+        //    @Convert(converter = BirthdayConverter.class)
+        @Column(name = "birth\_date")
+        private Birthday birthDate;
+    }
 
 
-Запустим HibernateRunner еще раз и видим, что появилось дублирование:
+Все аннотации, которые использовали в сущностях - все те же самые аннотации можно использовать и во встраиваемых компонентах.
 
-![](src/main/resources/precis/h-02/h-02-003-2.png)
+Теперь, идём в User и здесь хотим вместо этих трёх полей использовать встраиваемый компонент. Поэтому пишем:
 
-Это происходит потому что создали два логгера, которые отслеживают лог-евенты и отправляют соответствующим аппендерам. А так как и тот, и тот логгер отправляет одному и тому же аппендеру - мы видим на консоли эти сообщения два раза. Это происходит потому что у логгеров тоже есть parent-child зависимости или т.н. иерархия. Следовательно, `<root>` он на то и root как класс Object в java, от него наследуются все логгеры. Следственно, если хотим чтобы сообщения не дублировали при иерархии, то добавляем новое свойство `<logger name="com.kainv" additivity="false">`. В таком случае с _additivity="false"_ мы не будем дублировать сообщение, если другой логгер в нашей иерархии также его отображает.
-
-Как еще определяется иерархия? По пакетам. Мы можем создать ещё один логгер, который будет отслеживать пакет _com.kain.entity_:
-
-**log4j.xml**
-
-    <!--    Логгер. Определяем пакет в котором хотим отслеживать логи -->
-    <logger name="com.kainv" additivity="false">
-        <!--        Указываем уровень с которого логируем-->
-        <level value="info"/>
-        <!--        Указываем аппендер -->
-        <appender-ref ref="console"/>
-    </logger>
-
-    <logger name="com.kainv.entity" additivity="false">
-        <level value="info"/>
-        <appender-ref ref="console"/>
-    </logger>
-
-
-        <!--    Тоже логгер, но главный -->
-    <root>
-        <level value="info"/>
-        <appender-ref ref="console"/>
-        <appender-ref ref="file"/>
-    </root>
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Entity
+    @Table(name = "users", schema = "public")
+    @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
+    public class User {
+        @Id
+        private String username;
+        @Embedded
+        private PersonalInfo personalInfo;
+        @Type(type = "kainv")
+        private String info;
+        @Enumerated(EnumType.STRING)
+        private Role role;
+    }
 
 
-Получается, что пакет entity находится в _com.kainv_, а в _com.kainv_ тоже есть логгер. Поэтому для этого логгера (_com.kainv.entity_) родителем будет _com.kainv_. Поэтому если отобразим сообщение по одному и тому же аппендеру, то будет дублирование. Поэтому используем additivity="false" в таком случае. Но на практике редко используют много логгеров (например, ConsoleAppender нужен только во времся разработки, в продакшене в нем нет нужны).
+В HibernateRunner поправляем нашу сущность:
 
-Ещё один момент это то, что в lombok мы можем использовать соответствующую аннотацию чтобы не дублировать константу `public static final Logger log = LoggerFactory.getLogger(HibernateRunner.class);` из класса в класс. Эта аннотация называется `@Slf4j` которая сгенерирует такую же строку:
+**HibernateRunner.java**
 
-![](src/main/resources/precis/h-02/h-02-003-3.png)
+        User user = User.builder()
+                .username("vadim@gmail.com")
+                .personalInfo(
+                        PersonalInfo.builder()
+                                .lastname("Kain")
+                                .firstname("Vadim")
+                                .build()
+                )
+                .build();
+
+
+Запустим HibernateRunner и проверяем что это также работает:
+
+![](src/main/resources/precis/h-03/h-03-001-1.png)
+
+Видим, что все прошло успешно.
+
+Как это работает?
+-----------------
+
+На самом деле всё просто. Зайдём в класс `Configuration` и там всё сводится к нашим `private List<BasicType> basicTypes;`. Т.е. к тем типам данным, которые добавляются по умолчанию в хайбернете. Если зайдём в интерфейс `Type`, от которого наследуется `BasicType`, то найдем реализацию `EmbeddedComponentType`. Этот тип отвечает за embedded компоненты. Он наследуется от `ComponentType`. В этом классе на каждый из встраиваемых типов создаётся объект типа `ComponentType` и для многих других типов используется двухфазовая инициализация. Т.е. сначала вызывается метод `hydrate()`:
+
+![](src/main/resources/precis/h-03/h-03-001-2.png)
+
+.... который из ResultSet получает все необходимые значения по колонкам String\[\] которые есть в нашем embedded компоненте. Далее, как только извлекли все значения из ResultSet при получении из БД - вызывается метод `resolve()`:
+
+![](src/main/resources/precis/h-03/h-03-001-3.png)
+
+Это уже второй шаг и мы уже получаем наш массив всех значений соответствующих колонок и на основани этого массива мы уже создаём соответствующую сущность. Т.е. это при чтении. А при сохранении в базу данных нужно наоборот: трансформировать embeddable компонент в соответствующие поля в базах данных. Это будет `nullSafeSet()`:
+
+![](src/main/resources/precis/h-03/h-03-001-4.png)
+
+Где у нас есть PreparedStatement и мы из нашего Object value устанавливаем соответствующие значения.
+
+Но тут есть один маленький момент. А что если поля в `User` несоответствуют полям в `PersonalInfo`? Т.е. например у нас не firstname, а first\_name. Для примера в `PersonalInfo` над полем `private Birthday birthDate;` уберём аннотацию `@Column(name = "birth_date")`:
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    // @Embeddable говорит о том, что это встраиваемый компонент
+    @Embeddable
+    public class PersonalInfo {
+        private String firstname;
+        private String lastname;
+        //    @Convert(converter = BirthdayConverter.class)
+        private Birthday birthDate;
+    }
+
+
+
+И теперь, если бы в `HibernateUtil` не было установлены `configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());` то нужно было бы указать birthDate через нижнее подчеркивание. Поэтому, в `User` можем использовать соответствующую аннотацию `@AttributeOverrides()` в которой должны указать название проперти в embedded компоненте и настоящую колонку в нашей сущности User:
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Entity
+    @Table(name = "users", schema = "public")
+    @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
+    public class User {
+        @Id
+        private String username;
+        @Embedded
+        @AttributeOverride(name = "birthDate", column = @Column(name = "birth\_date"))
+        private PersonalInfo personalInfo;
+        @Type(type = "kainv")
+        private String info;
+        @Enumerated(EnumType.STRING)
+        private Role role;
+    }
+
+
+Таких @AttributeOverride можно делать бесконечно. Такие компоненты встречаются довольно часто особенно в случае легаси баз данных где у нас много составных первичных ключей. Хотя лучше использовать синтактические генерируемые первичные ключи.

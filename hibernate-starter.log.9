@@ -1,6 +1,7 @@
-[2023-04-01 15:18:33, 189] TRACE [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl: 255] Starting after statement execution processing [AFTER_TRANSACTION]
-[2023-04-01 15:18:33, 189] TRACE [org.hibernate.event.internal.EntityState: 66] Detached instance of: com.kainv.entity.User
-[2023-04-01 15:18:33, 190] TRACE [org.hibernate.event.internal.DefaultSaveOrUpdateEventListener: 212] Updating detached instance
-[2023-04-01 15:18:33, 190] TRACE [org.hibernate.event.internal.DefaultSaveOrUpdateEventListener: 277] Updating [com.kainv.entity.User#kain@gmail.com]
-[2023-04-01 15:18:33, 193] TRACE [org.hibernate.event.internal.DefaultSaveOrUpdateEventListener: 325] Updating [com.kainv.entity.User#kain@gmail.com]
-[2023-04-01 15:18:33, 197] TRACE [com.kainv.HibernateRunner: 33] User is in persistent state: User(username=kain@gmail.com, firstname=Vadim, lastname=Kain, birthDate=null, info=null, role=null) session SessionImpl(269853881PersistenceContext[entityKeys=[EntityKey[com.kainv.entity.User#kain@gmail.com]], collectionKeys=[]];ActionQueue[insertions=ExecutableList{size=0} updates=ExecutableList{size=0} deletions=ExecutableList{size=0} orphanRemovals=ExecutableList{size=0} collectionCreations=ExecutableList{size=0} collectionRemovals=ExecutableList{size=0} collectionUpdates=ExecutableList{size=0} collectionQueuedOps=ExecutableList{size=0} unresolvedInsertDependencies=null])
+[2023-04-01 15:18:33, 213] TRACE [org.hibernate.event.internal.AbstractFlushingEventListener: 244] Processing unreferenced collections
+[2023-04-01 15:18:33, 214] TRACE [org.hibernate.event.internal.AbstractFlushingEventListener: 257] Scheduling collection removes/(re)creates/updates
+[2023-04-01 15:18:33, 215] DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener: 114] Flushed: 0 insertions, 0 updates, 0 deletions to 1 objects
+[2023-04-01 15:18:33, 215] DEBUG [org.hibernate.event.internal.AbstractFlushingEventListener: 121] Flushed: 0 (re)creations, 0 updates, 0 removals to 0 collections
+[2023-04-01 15:18:33, 216] DEBUG [org.hibernate.internal.util.EntityPrinter: 110] Listing entities:
+[2023-04-01 15:18:33, 216] DEBUG [org.hibernate.internal.util.EntityPrinter: 117] com.kainv.entity.User{firstname=Vadim, role=null, birthDate=null, username=kain@gmail.com, info=null, lastname=Kain}
+[2023-04-01 15:18:33, 216] TRACE [org.hibernate.event.internal.AbstractFlushingEventListener: 329] Executing flush

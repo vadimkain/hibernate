@@ -1,7 +1,7 @@
-[2023-04-01 15:18:33, 221] TRACE [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl: 255] Starting after statement execution processing [AFTER_TRANSACTION]
-[2023-04-01 15:18:33, 221] TRACE [org.hibernate.event.internal.AbstractFlushingEventListener: 364] Post flush
-[2023-04-01 15:18:33, 223] TRACE [org.hibernate.resource.jdbc.internal.AbstractLogicalConnectionImplementor: 53] LogicalConnection#beforeTransactionCompletion
-[2023-04-01 15:18:33, 223] TRACE [org.hibernate.resource.transaction.internal.SynchronizationRegistryStandardImpl: 55] SynchronizationRegistryStandardImpl.notifySynchronizationsBeforeTransactionCompletion
-[2023-04-01 15:18:33, 223] TRACE [org.hibernate.resource.jdbc.internal.AbstractLogicalConnectionImplementor: 85] Preparing to commit transaction via JDBC Connection.commit()
-[2023-04-01 15:18:33, 224] TRACE [org.hibernate.resource.jdbc.internal.AbstractLogicalConnectionImplementor: 88] Transaction committed via JDBC Connection.commit()
-[2023-04-01 15:18:33, 224] TRACE [org.hibernate.resource.jdbc.internal.AbstractLogicalConnectionImplementor: 58] LogicalConnection#afterTransaction
+[2023-04-01 15:18:33, 236] DEBUG [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 174] Initiating JDBC connection release from afterTransaction
+[2023-04-01 15:18:33, 236] TRACE [org.hibernate.internal.SessionImpl: 2423] SessionImpl#afterTransactionCompletion(successful=true, delayed=false)
+[2023-04-01 15:18:33, 236] TRACE [org.hibernate.internal.SessionImpl: 396] Closing session [3a23061e-2076-45db-8dac-533fa342e61e]
+[2023-04-01 15:18:33, 237] TRACE [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl: 166] Closing JDBC container [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl@4ace284d]
+[2023-04-01 15:18:33, 237] TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 323] Releasing JDBC resources
+[2023-04-01 15:18:33, 237] TRACE [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 259] Closing logical connection
+[2023-04-01 15:18:33, 238] TRACE [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 266] Logical connection closed
