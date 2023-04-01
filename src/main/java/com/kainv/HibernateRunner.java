@@ -2,15 +2,13 @@ package com.kainv;
 
 import com.kainv.entity.User;
 import com.kainv.util.HibernateUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
+@Slf4j
 public class HibernateRunner {
-    public static final Logger logger = LoggerFactory.getLogger(HibernateRunner.class);
-
     public static void main(String[] args) {
         User user = User.builder()
                 .username("kain@gmail.com")
@@ -19,7 +17,7 @@ public class HibernateRunner {
                 .build();
 
 //        Пишем лог уровня INFO
-        logger.info("User entity is in transient state, object: {}", user);
+        log.info("User entity is in transient state, object: {}", user);
 
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
             Session session1 = sessionFactory.openSession();
@@ -27,19 +25,19 @@ public class HibernateRunner {
                 Transaction transaction = session1.beginTransaction();
 
 //                Создаём лог уровня TRACE
-                logger.trace("Transaction is created, {}", transaction);
+                log.trace("Transaction is created, {}", transaction);
 
                 session1.saveOrUpdate(user);
-                logger.trace("User is in persistent state: {} session {}", user, session1);
+                log.trace("User is in persistent state: {} session {}", user, session1);
 
                 session1.getTransaction().commit();
             }
 
 //            Создаём лог уровня WARN. Это не ошибка, но стоит обратить внимание программисту
-            logger.warn("User is in detached state: {}, session is closed {}", user, session1);
+            log.warn("User is in detached state: {}, session is closed {}", user, session1);
         } catch (Exception exception) {
 //            Создаём лог уровня ERROR и отображаем весь stacktrace
-            logger.error("Exception occurred", exception);
+            log.error("Exception occurred", exception);
             throw exception;
         }
     }
