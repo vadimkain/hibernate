@@ -1,148 +1,137 @@
-03 - 001 Embedded components
-============================
+03 - 002 Primary keys
+=====================
 
-Дело в том, что часто на уровне java мы работает со сложными объектами, которые внутри себя содержат другие поля. И, следовательно, мы можем захотеть объединить некоторые поля сущностей (к примеру firstname, lastname) в одно поле (например personal\_information), но т.к. в SQL мы не хотим создавать какой-то встраиваемый тип который не все СУБД могут поддерживать. Следовательно, проще создать объекты на уровне java, а в SQL оставить все как есть. Или, например, в легаси базах данных очень часто есть составные первичные ключи, а следовательно вторичные которые необходимо также объединять в отдельные объекты, для того чтобы работать как с одним ключем.
+Разберёмся с первичными ключами. Т.е. такие первичные ключи как в нашем случае (String username) не так часто встречается потому что с ними много проблем как минимум в производительности потому что hibernate лучше работает с автогенерируемыми первичными ключами, а вторым - очень сложно менять бизнес-логику с первичными ключами которые натуральные.
 
-Объединим три поля: firstname, lastname, birthDate в какой-то встраиваемый компонент. Для этого создадим класс `PersonalInfo` в пакете _com.kainv.entity_ и вставим туда три поля:
+Зайдём в нашу SQL консоль и для пользователя добавим автогенерируемый IDшник:
 
-    package com.kainv.entity;
-
-    import javax.persistence.Column;
-
-    public class PersonalInfo {
-        private String firstname;
-        private String lastname;
-        //    @Convert(converter = BirthdayConverter.class)
-        @Column(name = "birth\_date")
-        private Birthday birthDate;
-    }
-
-
-Здесь все те же правила, что и у обычных сущностей (должен быть конструктор без параметров, не должен быть immutable, должны быть геттеры и сеттеры и т.д.. Следовательно, Повторяем здесь все те же lombok аннотации:
-
-    package com.kainv.entity;
-
-    import lombok.AllArgsConstructor;
-    import lombok.Builder;
-    import lombok.Data;
-    import lombok.NoArgsConstructor;
-
-    import javax.persistence.Column;
-    import javax.persistence.Embeddable;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    // @Embeddable говорит о том, что это встраиваемый компонент
-    @Embeddable
-    public class PersonalInfo {
-        private String firstname;
-        private String lastname;
-        //    @Convert(converter = BirthdayConverter.class)
-        @Column(name = "birth\_date")
-        private Birthday birthDate;
-    }
+    CREATE TABLE users
+    (
+        id         BIGSERIAL PRIMARY KEY,
+        username   VARCHAR(128) UNIQUE,
+        firstname  VARCHAR(128),
+        lastname   VARCHAR(128),
+        birth\_date DATE,
+        role       VARCHAR(32),
+        info       jsonb
+    );
 
 
-Все аннотации, которые использовали в сущностях - все те же самые аннотации можно использовать и во встраиваемых компонентах.
+Дропнем таблицу users и опять создадим:
 
-Теперь, идём в User и здесь хотим вместо этих трёх полей использовать встраиваемый компонент. Поэтому пишем:
+![](src/main/resources/precis/h-03/h-03-002-1.png)
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @Entity
-    @Table(name = "users", schema = "public")
-    @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
-    public class User {
-        @Id
-        private String username;
-        @Embedded
-        private PersonalInfo personalInfo;
-        @Type(type = "kainv")
-        private String info;
-        @Enumerated(EnumType.STRING)
-        private Role role;
-    }
+Теперь, наш String username это обычная колонка. Можно даже указать, что она unique = true (на самом деле это наша метаинформация чтобы разработчики видели, что колонка уникальная). Такая метаинформация может использоваться и, для того чтобы сгенерировать автоматически DDL.
 
+Далее, создаём первичный ключ `private Long id`, но в этот раз уже недостаточно просто аннотации `@Id` потому что мы должны Hibernate сказать чтобы он не вставлял это поле в базу данных иначе он будет требовать чтобы идентификатор был не null. Тогда мы должны поставить аннотацию `@GeneratedValue(strategy = )` и указать в стратегии соответствующее значение. Есть четыре различных вариантов:
 
-В HibernateRunner поправляем нашу сущность:
+*   `GenerationType.AUTO` - использует либо **IDENTITY** либо **SEQUENCE** либо **TABLE** в зависимости от выбранной СУБД и от выбранного диалекта. В случае postgresql это **SEQUENCE**. Диалект указываем в _hibernate.cfg.xml_, в `<property name="hibernate.dialect">`.
 
-**HibernateRunner.java**
+*   `GenerationType.IDENTITY`
 
-        User user = User.builder()
-                .username("vadim@gmail.com")
-                .personalInfo(
-                        PersonalInfo.builder()
-                                .lastname("Kain")
-                                .firstname("Vadim")
-                                .build()
-                )
-                .build();
+    В нашем случае когда база данных сама ответственна за генерацию id'шника (потому что поставили BIGSERIAL) следственно наша правильная конфигурация это `@GeneratedValue(strategy = IDENTITY)`. Именно эта настройка чаще всего встречается в приложениях. Он побеждает и при производительности в работе с Hibernate и по простоте.
 
+                @Data
+                @NoArgsConstructor
+                @AllArgsConstructor
+                @Builder
+                @Entity
+                @Table(name = "users", schema = "public")
+                @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
+                public class User {
+                    @Id
+                    @GeneratedValue(strategy = GenerationType.IDENTITY)
+                    private Long id;
 
-Запустим HibernateRunner и проверяем что это также работает:
-
-![](src/main/resources/precis/h-03/h-03-001-1.png)
-
-Видим, что все прошло успешно.
-
-Как это работает?
------------------
-
-На самом деле всё просто. Зайдём в класс `Configuration` и там всё сводится к нашим `private List<BasicType> basicTypes;`. Т.е. к тем типам данным, которые добавляются по умолчанию в хайбернете. Если зайдём в интерфейс `Type`, от которого наследуется `BasicType`, то найдем реализацию `EmbeddedComponentType`. Этот тип отвечает за embedded компоненты. Он наследуется от `ComponentType`. В этом классе на каждый из встраиваемых типов создаётся объект типа `ComponentType` и для многих других типов используется двухфазовая инициализация. Т.е. сначала вызывается метод `hydrate()`:
-
-![](src/main/resources/precis/h-03/h-03-001-2.png)
-
-.... который из ResultSet получает все необходимые значения по колонкам String\[\] которые есть в нашем embedded компоненте. Далее, как только извлекли все значения из ResultSet при получении из БД - вызывается метод `resolve()`:
-
-![](src/main/resources/precis/h-03/h-03-001-3.png)
-
-Это уже второй шаг и мы уже получаем наш массив всех значений соответствующих колонок и на основани этого массива мы уже создаём соответствующую сущность. Т.е. это при чтении. А при сохранении в базу данных нужно наоборот: трансформировать embeddable компонент в соответствующие поля в базах данных. Это будет `nullSafeSet()`:
-
-![](src/main/resources/precis/h-03/h-03-001-4.png)
-
-Где у нас есть PreparedStatement и мы из нашего Object value устанавливаем соответствующие значения.
-
-Но тут есть один маленький момент. А что если поля в `User` несоответствуют полям в `PersonalInfo`? Т.е. например у нас не firstname, а first\_name. Для примера в `PersonalInfo` над полем `private Birthday birthDate;` уберём аннотацию `@Column(name = "birth_date")`:
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    // @Embeddable говорит о том, что это встраиваемый компонент
-    @Embeddable
-    public class PersonalInfo {
-        private String firstname;
-        private String lastname;
-        //    @Convert(converter = BirthdayConverter.class)
-        private Birthday birthDate;
-    }
+                    @Column(unique = true)
+                    private String username;
+                    @Embedded
+                    @AttributeOverride(name = "birthDate", column = @Column(name = "birth\_date"))
+                    private PersonalInfo personalInfo;
+                    @Type(type = "kainv")
+                    private String info;
+                    @Enumerated(EnumType.STRING)
+                    private Role role;
+                }
 
 
+Вернёмся в HibernateRunner и там поменяем username чтобы он был уникальный и ещё раз запустим HibernateRunner:
 
-И теперь, если бы в `HibernateUtil` не было установлены `configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());` то нужно было бы указать birthDate через нижнее подчеркивание. Поэтому, в `User` можем использовать соответствующую аннотацию `@AttributeOverrides()` в которой должны указать название проперти в embedded компоненте и настоящую колонку в нашей сущности User:
+![](src/main/resources/precis/h-03/h-03-002-2.png)
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @Entity
-    @Table(name = "users", schema = "public")
-    @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
-    public class User {
-        @Id
-        private String username;
-        @Embedded
-        @AttributeOverride(name = "birthDate", column = @Column(name = "birth\_date"))
-        private PersonalInfo personalInfo;
-        @Type(type = "kainv")
-        private String info;
-        @Enumerated(EnumType.STRING)
-        private Role role;
-    }
+Как видим, всё выполнилось. Данные вставились в таблицу users, но idшник не указан потому что нам не нужно указывать т.к. **база данных сама отвечает** за идентификатор.
+
+Теперь, если зайдём в таблицу users, то увидим пользователя которого вставили с правильным id. **Мы должны предпочитать именно такой вариант первичных ключей**.
+
+*   `GenerationType.SEQUENCE` - т.е. когда используется последовательность. Это ещё один тип в СУБД наравне с таблицами, view и т.д. просто называется SEQUENCE. Это аналог обычного счётчика. Т.е. который просто содержит какое-то значение и автоматически инкриминируется после каждого вызова. Они есть не во всех базах данных, например в MySQL таких последовательностей нет.
+
+    ![](src/main/resources/precis/h-03/h-03-002-3.png)
+
+    Видим user\_id\_seq. Это и есть sequence который автоматически создался когда создавали наш идентификатор BIGSERIAL. Он даже указывает как он получает следующее значение из этого sequence (есть и другие функции для работы с sequence, например для обнуления или получения текущего значения без инкремента). Т.е. вызывается встроенная функция nextval('user\_id\_seq') в которую передаётся название sequence.
+
+    Мы также можем создать sequence сами. Зайдём в консоль и создадим свой sequence:
+
+                CREATE TABLE users
+                (
+                --     id         BIGSERIAL PRIMARY KEY,
+                -- Устанавливаем BIGINT поскольку создали sequence
+                    id         BIGINT PRIMARY KEY,
+                    username   VARCHAR(128) UNIQUE,
+                    firstname  VARCHAR(128),
+                    lastname   VARCHAR(128),
+                    birth\_date DATE,
+                    role       VARCHAR(32),
+                    info       jsonb
+                );
+
+                DROP TABLE users;
+
+                CREATE SEQUENCE users\_id\_seq
+                --     Данная последовательность принадлежит таблице users, колонке id
+                    OWNED BY public.users.id
 
 
-Таких @AttributeOverride можно делать бесконечно. Такие компоненты встречаются довольно часто особенно в случае легаси баз данных где у нас много составных первичных ключей. Хотя лучше использовать синтактические генерируемые первичные ключи.
+Удалим таблицу users, создадим таблицу и последовательность для неё:
+
+![](src/main/resources/precis/h-03/h-03-002-4.png)
+
+Возвращаемся в класс User и теперь нам надо указать эту sequence в нашем идентификаторе. Если не укажем, то он будет искать SEQUENCE по умолчанию 'hibernate\_sequence' (если бы мы автогенерировали DDL, то hibernate его создал бы):
+
+![](src/main/resources/precis/h-03/h-03-002-5.png)
+
+Запускаем HibernateRunner и видим, что перед тем как вставить в нашу таблицу вызывается _select nextval('users\_id\_seq')_ для того чтобы потом во время insert в нашу таблицу установить этот id'шник потому что сейчас мы сами отвечаем за этот id'шник и передаём его в базу данных. Таблица не знает какой id к ней придёт.
+
+![](src/main/resources/precis/h-03/h-03-002-6.png)
+
+Ещё один интересный момент. Дело в том, что в случае Transient сущностей для того чтобы она стала Persistent - в ней должен быть установлен IDшник. Это главное обязательное требование. До того как мы использовали `@GeneratedValues()` мы использовали натуральные ключи. Следовательно, наши запросы отправлялись в базу данных только когда делали `session.flush()` или `session.getTransaction().commit();`. Следовательно, сейчас сначала вызывается _select nextval()_ чтобы у сущности был IDшник (мы не можем не иметь ID у Persistence сущности потому что он используется для нашего first level cache). Только после `session.getTransaction().commit();` мы увидим запрос на _insert_.
+
+*   `GenerationType.TABLE` - используется реже всего. Только в том случае если база данных не поддерживает автогенерируемых IDшников или последовательностей. TABLE использовали до того как изобрели sequence и автогенерируемые ключи.
+
+    **В чем суть TABLE?** Идём в консоль и создаём эту самую таблицу:
+
+                CREATE TABLE all\_sequence
+                (
+                --     Название таблицы
+                    table\_name VARCHAR(32) PRIMARY KEY,
+                --     Счётчик таблицы
+                    pk\_value   BIGINT NOT NULL
+                );
+
+
+Именно такую таблицы должны предоставить в случае стратегии TABLE. Это что-то вроде костыля в случае отсутствия sequence и автогенерируемых ключей. Эта таблица будет хранить для всех таблиц их текущее значение первичного ключа.
+
+Удалим таблицы _users\_id\_seq_ и _users_. Создадим заново _users_ и _all\_sequence_:
+
+![](src/main/resources/precis/h-03/h-03-002-7.png)
+
+Идём в класс User и вместо @SequenceGenerator должны использовать `@TableGenerator()` в котором делаем все то же самое:
+
+![](src/main/resources/precis/h-03/h-03-002-8.png)
+
+Теперь, если запустим HibernateRunner в дебаге, то на шаге после saveOrUpdate() увидим следующее:
+
+![](src/main/resources/precis/h-03/h-03-002-9.png)
+
+Сначала вызвался _select_. Это пессимистическая блокировка строки которая вернулась на этот запрос. Естественно в первом случае у нас не было такой записи в all\_sequence следственно мы её вставляем при помощи _insert_. Вставляет в all\_sequence название нашей таблицы и её pk\_value. Далее происходит _update_, т.е. устанавливаем новое значение (инкриминируем) где берём предыдущее значение (проверяем double check что оно не изменилось). Таким образом в нашей сущности теперь есть идентификатор. Опять же в Hibernate для Persistence state нам не нужно делать _insert_, нам главное получить ID из сущности. Следовательно, только когда закоммитим транзакцию или сделаем flush произойдёт запрос в базу данных на _insert_ в нашу таблицу users.
+
+На самом деле flush и commit это не единственные варианты когда hibernate сбрасывает dirty контекст. Теперь в таблице all\_sequence видим значение 1. Раньше так и делали до создания первычных ключей и последовательностей.

@@ -19,6 +19,21 @@ import javax.persistence.*;
 @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
 public class User {
     @Id
+//    Указываем sequence генератор и саму стратегию
+    @GeneratedValue(generator = "user_generator", strategy = GenerationType.TABLE)
+//    указываем любое название sequence, само название sequence в БД и шаг инкремента (для SEQUENCE)
+//    @SequenceGenerator(name = "user_generator", sequenceName = "users_id_seq", allocationSize = 1)
+//    для TABLE
+    @TableGenerator(
+            name = "user_generator",
+            table = "all_sequence",
+            allocationSize = 1,
+            pkColumnName = "table_name",
+            valueColumnName = "pk_value"
+    )
+    private Long id;
+
+    @Column(unique = true)
     private String username;
     @Embedded
     @AttributeOverride(name = "birthDate", column = @Column(name = "birth_date"))

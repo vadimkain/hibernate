@@ -1,7 +1,27 @@
-[2023-04-01 15:18:33, 236] DEBUG [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 174] Initiating JDBC connection release from afterTransaction
-[2023-04-01 15:18:33, 236] TRACE [org.hibernate.internal.SessionImpl: 2423] SessionImpl#afterTransactionCompletion(successful=true, delayed=false)
-[2023-04-01 15:18:33, 236] TRACE [org.hibernate.internal.SessionImpl: 396] Closing session [3a23061e-2076-45db-8dac-533fa342e61e]
-[2023-04-01 15:18:33, 237] TRACE [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl: 166] Closing JDBC container [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl@4ace284d]
-[2023-04-01 15:18:33, 237] TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 323] Releasing JDBC resources
-[2023-04-01 15:18:33, 237] TRACE [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 259] Closing logical connection
-[2023-04-01 15:18:33, 238] TRACE [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 266] Logical connection closed
+[2023-04-02 20:29:25, 713] INFO [org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator: 52] HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+[2023-04-02 20:29:25, 781] WARN [org.hibernate.engine.jdbc.spi.SqlExceptionHelper: 137] SQL Error: 0, SQLState: 42P01
+[2023-04-02 20:29:25, 782] ERROR [org.hibernate.engine.jdbc.spi.SqlExceptionHelper: 142] ОШИБКА: отношение "user_gen" не существует
+  Позиция: 17
+[2023-04-02 20:29:25, 786] INFO [org.hibernate.orm.connections.pooling: 502] HHH10001008: Cleaning up connection pool [jdbc:postgresql://localhost:5432/postgres]
+[2023-04-02 20:30:12, 043] INFO [org.hibernate.Version: 44] HHH000412: Hibernate ORM core version 5.5.6.Final
+[2023-04-02 20:30:12, 176] INFO [Hibernate Types: 283] This framework is proudly powered by:
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+ _    _                           _     _
+| |  | |                         (_)   | |
+| |__| |_   _ _ __   ___ _ __ ___ _ ___| |_ ___ _ __   ___ ___
+|  __  | | | | '_ \ / _ \ '__/ __| / __| __/ _ \ '_ \ / __/ _ \
+| |  | | |_| | |_) |  __/ |  \__ \ \__ \ ||  __/ | | | (_|  __/
+|_|  |_|\__, | .__/ \___|_|  |___/_|___/\__\___|_| |_|\___\___|
+         __/ | |
+        |___/|_|
+
+At Hypersistence, we only build amazing tools, like Hibernate Types, Flexy Pool, or Hypersistence Optimizer.
+
+What if there were a tool that could automatically detect JPA and Hibernate performance issues?
+
+Hypersistence Optimizer is that tool! For more details, go to: 
+
+https://vladmihalcea.com/hypersistence-optimizer/
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+

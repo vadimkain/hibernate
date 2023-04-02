@@ -12,7 +12,7 @@ import org.hibernate.Transaction;
 public class HibernateRunner {
     public static void main(String[] args) {
         User user = User.builder()
-                .username("vadim@gmail.com")
+                .username("vadim3@gmail.com")
                 .personalInfo(
                         PersonalInfo.builder()
                                 .lastname("Kain")
