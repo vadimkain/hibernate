@@ -25,6 +25,8 @@ public class User {
     private String username;
     @Type(type = "kainv")
     private String info;
+
+    @Transient
     @Enumerated(EnumType.STRING)
     private Role role;
 }
