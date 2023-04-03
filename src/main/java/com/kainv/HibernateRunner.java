@@ -1,5 +1,6 @@
 package com.kainv;
 
+import com.kainv.entity.Birthday;
 import com.kainv.entity.PersonalInfo;
 import com.kainv.entity.User;
 import com.kainv.util.HibernateUtil;
@@ -7,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+
+import java.time.LocalDate;
 
 @Slf4j
 public class HibernateRunner {
@@ -17,6 +20,7 @@ public class HibernateRunner {
                         PersonalInfo.builder()
                                 .lastname("Kain")
                                 .firstname("Vadim")
+                                .birthDate(new Birthday(LocalDate.of(2000, 1, 2)))
                                 .build()
                 )
                 .build();
@@ -37,8 +41,17 @@ public class HibernateRunner {
 
                 session1.getTransaction().commit();
             }
-
 //            Создаём лог уровня WARN. Это не ошибка, но стоит обратить внимание программисту
+            try (Session session2 = sessionFactory.openSession()) {
+                PersonalInfo key = PersonalInfo.builder()
+                        .lastname("Kain")
+                        .firstname("Vadim")
+                        .birthDate(new Birthday(LocalDate.of(2000, 1, 2)))
+                        .build();
+
+                User user2 = session2.get(User.class, key);
+                System.out.println();
+            }
             log.warn("User is in detached state: {}, session is closed {}", user, session1);
         } catch (Exception exception) {
 //            Создаём лог уровня ERROR и отображаем весь stacktrace

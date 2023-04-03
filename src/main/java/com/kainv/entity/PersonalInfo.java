@@ -5,8 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import java.io.Serial;
+import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
@@ -14,7 +15,10 @@ import javax.persistence.Embeddable;
 @Builder
 // @Embeddable говорит о том, что это встраиваемый компонент
 @Embeddable
-public class PersonalInfo {
+public class PersonalInfo implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 2824366793058175795L;
+
     private String firstname;
     private String lastname;
     //    @Convert(converter = BirthdayConverter.class)
