@@ -18,7 +18,9 @@ import javax.persistence.*;
 @Table(name = "users", schema = "public")
 @TypeDef(name = "kainv", typeClass = JsonBinaryType.class)
 public class User {
-    @EmbeddedId
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     @AttributeOverride(name = "birthDate", column = @Column(name = "birth_date"))
     private PersonalInfo personalInfo;
     @Column(unique = true)
@@ -29,4 +31,8 @@ public class User {
     @Transient
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
 }

@@ -1,6 +1,7 @@
 package com.kainv;
 
 import com.kainv.entity.Birthday;
+import com.kainv.entity.Company;
 import com.kainv.entity.PersonalInfo;
 import com.kainv.entity.User;
 import com.kainv.util.HibernateUtil;
@@ -14,8 +15,12 @@ import java.time.LocalDate;
 @Slf4j
 public class HibernateRunner {
     public static void main(String[] args) {
+        Company company = Company.builder()
+                .name("Google")
+                .build();
+
         User user = User.builder()
-                .username("vadim3@gmail.com")
+                .username("vadim@gmail.com")
                 .personalInfo(
                         PersonalInfo.builder()
                                 .lastname("Kain")
@@ -23,40 +28,27 @@ public class HibernateRunner {
                                 .birthDate(new Birthday(LocalDate.of(2000, 1, 2)))
                                 .build()
                 )
+                .company(company)
                 .build();
 
 //        Пишем лог уровня INFO
         log.info("User entity is in transient state, object: {}", user);
 
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
-            Session session1 = sessionFactory.openSession();
-            try (session1) {
-                Transaction transaction = session1.beginTransaction();
+            Session session = sessionFactory.openSession();
+            try (session) {
+                Transaction transaction = session.beginTransaction();
 
 //                Создаём лог уровня TRACE
                 log.trace("Transaction is created, {}", transaction);
 
-                session1.saveOrUpdate(user);
-                log.trace("User is in persistent state: {} session {}", user, session1);
+                session.saveOrUpdate(company);
+                session.saveOrUpdate(user);
 
-                session1.getTransaction().commit();
-            }
-//            Создаём лог уровня WARN. Это не ошибка, но стоит обратить внимание программисту
-            try (Session session2 = sessionFactory.openSession()) {
-                PersonalInfo key = PersonalInfo.builder()
-                        .lastname("Kain")
-                        .firstname("Vadim")
-                        .birthDate(new Birthday(LocalDate.of(2000, 1, 2)))
-                        .build();
+                log.trace("User is in persistent state: {} session {}", user, session);
 
-                User user2 = session2.get(User.class, key);
-                System.out.println();
+                session.getTransaction().commit();
             }
-            log.warn("User is in detached state: {}, session is closed {}", user, session1);
-        } catch (Exception exception) {
-//            Создаём лог уровня ERROR и отображаем весь stacktrace
-            log.error("Exception occurred", exception);
-            throw exception;
         }
     }
 }
