@@ -1,8 +1,7 @@
-[2023-04-03 00:55:26, 060] INFO [org.hibernate.id.enhanced.TableGenerator: 499] HHH000398: Explicit segment value for id generator [all_sequence.table_name] suggested; using default [users]
-[2023-04-03 00:55:26, 361] INFO [org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator: 52] HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
-[2023-04-03 00:55:26, 471] INFO [org.hibernate.orm.connections.pooling: 502] HHH10001008: Cleaning up connection pool [jdbc:postgresql://localhost:5432/postgres]
-[2023-04-03 18:41:42, 979] INFO [org.hibernate.Version: 44] HHH000412: Hibernate ORM core version 5.5.6.Final
-[2023-04-03 18:41:43, 187] INFO [Hibernate Types: 283] This framework is proudly powered by:
+[2023-04-10 22:23:46, 068] INFO [org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator: 52] HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+[2023-04-10 22:36:45, 168] INFO [org.hibernate.orm.connections.pooling: 502] HHH10001008: Cleaning up connection pool [jdbc:postgresql://localhost:5432/postgres]
+[2023-04-10 22:36:49, 710] INFO [org.hibernate.Version: 44] HHH000412: Hibernate ORM core version 5.5.6.Final
+[2023-04-10 22:36:49, 871] INFO [Hibernate Types: 283] This framework is proudly powered by:
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  _    _                           _     _

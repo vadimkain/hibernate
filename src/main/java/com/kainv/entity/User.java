@@ -1,10 +1,7 @@
 package com.kainv.entity;
 
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -13,6 +10,8 @@ import javax.persistence.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// Переопределяем метод toString(), исключаем поле company
+@ToString(exclude = "company")
 @Builder
 @Entity
 @Table(name = "users", schema = "public")
@@ -32,7 +31,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @ManyToOne
+    //    optional = false - говорит о том, что это обязательный параметр (NOT NULL)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
 }

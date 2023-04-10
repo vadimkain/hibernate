@@ -42,10 +42,7 @@ public class HibernateRunner {
 //                Создаём лог уровня TRACE
                 log.trace("Transaction is created, {}", transaction);
 
-                session.saveOrUpdate(company);
-                session.saveOrUpdate(user);
-
-                log.trace("User is in persistent state: {} session {}", user, session);
+                User user1 = session.get(User.class, 1L);
 
                 session.getTransaction().commit();
             }
